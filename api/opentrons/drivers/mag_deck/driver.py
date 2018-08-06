@@ -156,9 +156,10 @@ class MagDeck:
         self._plate_height = None
         self._mag_position = None
 
-    def connect(self, port=None) -> str:
+    def connect(self, port=None, baudrate=MAG_DECK_BAUDRATE) -> str:
         '''
-        :param port: '/dev/ttyMagDeck'
+        :param port: '/dev/modules/ttyn_magdeck'
+        :param baudrate: MAG_DECK_BAUDRATE or 1200 for dfu
         NOTE: Using the symlink above to connect makes sure that the robot
         connects/reconnects to the module even after a device
         reset/reconnection
@@ -167,7 +168,7 @@ class MagDeck:
             return ''
         try:
             self.disconnect()
-            self._connect_to_port(port)
+            self._connect_to_port(port, baudrate)
             self._wait_for_ack()    # verify the device is there
         except (SerialException, SerialNoResponse) as e:
             return str(e)
@@ -281,7 +282,9 @@ class MagDeck:
         followed by a .connect() to the same symlink node
         '''
         try:
-            self._send_command(GCODES['PROGRAMMING_MODE'])
+            #self._send_command(GCODES['PROGRAMMING_MODE'])
+            self.disconnect()
+            self._connect_to_port()
         except (MagDeckError, SerialException, SerialNoResponse) as e:
             return str(e)
         return ''
@@ -326,13 +329,13 @@ class MagDeck:
 
         return ret_code.strip()
 
-    def _connect_to_port(self, port=None):
+    def _connect_to_port(self, port=None, baudrate=MAG_DECK_BAUDRATE):
         try:
             mag_deck = environ.get('OT_MAG_DECK_ID')
             self._connection = serial_communication.connect(
                 device_name=mag_deck,
                 port=port,
-                baudrate=MAG_DECK_BAUDRATE
+                baudrate=baudrate
             )
         except SerialException:
             # if another process is using the port, pyserial raises an

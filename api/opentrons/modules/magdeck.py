@@ -102,3 +102,12 @@ class MagDeck:
         '''
         if self._driver:
             self._driver.disconnect()
+
+    def update_firmware(self):
+        """
+        Disconnect from current port, connect at 1200 baud and disconnect to
+        enter bootloader on a different port
+        """
+        self.disconnect()
+        self._driver.connect(self._port, 1200)
+        self._driver.disconnect()
