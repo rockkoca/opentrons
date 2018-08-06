@@ -1,5 +1,12 @@
+import os
+import subprocess
+import logging
+from time import sleep
 from opentrons.drivers.mag_deck import MagDeck as MagDeckDriver
 from opentrons import commands
+
+
+log = logging.getLogger(__name__)
 
 
 class MissingDevicePortError(Exception):
@@ -103,11 +110,62 @@ class MagDeck:
         if self._driver:
             self._driver.disconnect()
 
-    def update_firmware(self):
+    def enter_bootloader(self):
         """
         Disconnect from current port, connect at 1200 baud and disconnect to
         enter bootloader on a different port
         """
+        old_ports = discover_ports()
+        port = self._port
         self.disconnect()
-        self._driver.connect(self._port, 1200)
+        new_ports = discover_ports()
+        if not old_ports == new_ports and len(old_ports) == len(new_ports):
+            for _port in new_ports:
+                if _port not in old_ports:
+                    absolute_port = '/dev/modules/{}'.format(_port)
+                    port = absolute_port
+        self._driver.connect(port, 1200)
+        sleep(2)
         self._driver.disconnect()
+        sleep(5)    # Wait for the new port to register
+        return port
+
+    def update_firmware(self, firmware_file, config_file):
+        """
+        Enter bootloader then run avrdude firmware upload command
+        :return:
+        """
+        # Make sure the module isn't in the middle of operation
+        self.disengage()
+        port = self.enter_bootloader()
+        avrdude_cmd = {
+            'config_file': '/data/user_storage/opentrons_data/avrdude.conf',
+            'part_no': 'atmega32u4',
+            'programmer_id': 'avr109',
+            'port_name': port,
+            'baudrate': '57600',
+            'firmware_file': '/data/user_storage/opentrons_data/'
+                             'mag-deck-arduino.ino.hex'
+        }
+        res = subprocess.run(
+            'avrdude '
+            '-C{config_file} '
+            '-v -p{part_no} '
+            '-c{programmer_id} '
+            '-P{port_name} '
+            '-b{baudrate} -D '
+            '-Uflash:w:{firmware_file}:i'.format(**avrdude_cmd), shell=True,
+            stdout=subprocess.PIPE).stdout.decode()
+
+        if 'flash verified' in res:
+            log.debug('Firmware uploaded successfully')
+        else:
+            log.debug('Firmware upload failed\n{}'.format(res.strip()))
+
+
+def discover_ports():
+    if os.environ.get('RUNNING_ON_PI') and os.path.isdir('/dev/modules'):
+        devices = os.listdir('/dev/modules')
+    else:
+        devices = []
+    return devices

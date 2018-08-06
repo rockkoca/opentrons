@@ -282,9 +282,7 @@ class MagDeck:
         followed by a .connect() to the same symlink node
         '''
         try:
-            #self._send_command(GCODES['PROGRAMMING_MODE'])
-            self.disconnect()
-            self._connect_to_port()
+            self._send_command(GCODES['PROGRAMMING_MODE'])
         except (MagDeckError, SerialException, SerialNoResponse) as e:
             return str(e)
         return ''
