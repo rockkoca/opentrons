@@ -66,6 +66,28 @@ async def install_smoothie_firmware(data, loop):
     return {'message': msg, 'filename': filename}
 
 
+async def install_module_firmware(data,loop):
+    from opentrons.modules.magdeck import MagDeck
+    # is this just the name or path?
+    filename = data.filename
+    log.info('Flashing image "{}", this will take about a minute'.format(
+        filename))
+    content = data.file.read()
+
+    with open(filename, 'wb') as wf:
+        wf.write(content)
+
+    md = MagDeck()
+    msg = await md.update_firmware(firmware_file_path, config_file_path)
+    log.debug('Firmware update complete')
+    try:
+        os.remove(filename)
+    except OSError:
+        pass
+    log.debug("Result: {}".format(msg))
+    return {'message':msg, 'filename': filename}
+
+
 def _set_ignored_version(version):
     """
     Private helper function that writes the most updated
@@ -186,6 +208,28 @@ async def update_firmware(request):
         log.exception("Exception during firmware update:")
         res = {'message': 'Exception {} raised by update of {}: {}'.format(
                 type(e), data, e.__traceback__)}
+        status = 500
+    return web.json_response(res, status=status)
+
+
+async def update_module_firmware(request):
+    """
+     This handler accepts a POST request with Content-Type: multipart/form-data
+     and a file field in the body named "module_firmware". The file should
+     be a valid HEX image to be flashed to the atmega32u4. The received file is
+     sent via USB to the board and flashed by the avr109 bootloader. The file
+     is then deleted and a success code is returned
+    """
+    log.debug('Update Firmware request received')
+    data = await request.post()
+    try:
+        res = await  install_module_firmware(data['module_firmware'],
+                                             request.loop)
+        status = 200
+    except Exception as e:
+        log.exception("Exception during firmware update:")
+        res = {'message': 'Exception {} raised by update of {}: {}'.format(
+            type(e), data, e.__traceback__)}
         status = 500
     return web.json_response(res, status=status)
 

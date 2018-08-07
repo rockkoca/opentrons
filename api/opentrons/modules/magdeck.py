@@ -130,7 +130,7 @@ class MagDeck:
         sleep(5)    # Wait for the new port to register
         return port
 
-    def update_firmware(self, firmware_file, config_file):
+    def update_firmware(self, firmware_file_path, config_file_path):
         """
         Enter bootloader then run avrdude firmware upload command
         :return:
@@ -139,13 +139,12 @@ class MagDeck:
         self.disengage()
         port = self.enter_bootloader()
         avrdude_cmd = {
-            'config_file': '/data/user_storage/opentrons_data/avrdude.conf',
+            'config_file': config_file_path,
             'part_no': 'atmega32u4',
             'programmer_id': 'avr109',
             'port_name': port,
             'baudrate': '57600',
-            'firmware_file': '/data/user_storage/opentrons_data/'
-                             'mag-deck-arduino.ino.hex'
+            'firmware_file': firmware_file_path
         }
         res = subprocess.run(
             'avrdude '
