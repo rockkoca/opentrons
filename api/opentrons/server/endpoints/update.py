@@ -42,3 +42,26 @@ async def _update_firmware(filename, loop):
     robot._driver._setup()
 
     return res
+
+
+async def _update_module_firmware(serialnum, filename, config_file_path, loop):
+    """
+    This method remains in the API currently because of its use of the robot
+    singleton's copy of the api object & driver. This should move to the server
+    lib project eventually and use its own driver object (preferably involving
+    moving the drivers themselves to the serverlib)
+    """
+    from opentrons import modules
+
+    # ensure there is a reference to the port
+    if not robot.is_connected():
+        robot.connect()
+        robot.modules = modules.discover_and_connect()
+    robot._driver.simulating = False
+    md = [
+        module for module in robot.modules
+        if module.device_info.get('serial') is serialnum
+    ]
+    res = await md.update_firmware(filename, config_file_path)
+    robot._driver.simulating = True
+    return res

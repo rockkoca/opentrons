@@ -178,6 +178,8 @@ def init(loop=None):
         '/server/update', endpoints.update_api)
     server.app.router.add_post(
         '/server/update/firmware', endpoints.update_firmware)
+    server.app.router.add_post(
+        '/modules/{serial}/update', endpoints.update_module_firmware)
     server.app.router.add_get(
         '/server/update/ignore', endpoints.get_ignore_version)
     server.app.router.add_post(

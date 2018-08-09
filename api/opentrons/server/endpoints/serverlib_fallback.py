@@ -66,26 +66,31 @@ async def install_smoothie_firmware(data, loop):
     return {'message': msg, 'filename': filename}
 
 
-async def install_module_firmware(data,loop):
-    from opentrons.modules.magdeck import MagDeck
-    # is this just the name or path?
-    filename = data.filename
+async def install_module_firmware(module_serial, data, loop):
+    import opentrons
+    from opentrons.server.endpoints.update import _update_module_firmware
+
+    fw_filename = data.filename
     log.info('Flashing image "{}", this will take about a minute'.format(
-        filename))
+        fw_filename))
     content = data.file.read()
 
-    with open(filename, 'wb') as wf:
+    with open(fw_filename, 'wb') as wf:
         wf.write(content)
 
-    md = MagDeck()
-    msg = await md.update_firmware(firmware_file_path, config_file_path)
+    config_file_path = os.path.join(
+        os.path.abspath(os.path.dirname(opentrons.__file__)),
+        'config', 'modules', 'avrdude.conf')
+
+    msg = await _update_module_firmware(module_serial, fw_filename,
+                                        config_file_path, loop)
     log.debug('Firmware update complete')
     try:
-        os.remove(filename)
+        os.remove(fw_filename)
     except OSError:
         pass
     log.debug("Result: {}".format(msg))
-    return {'message':msg, 'filename': filename}
+    return {'message': msg, 'filename': fw_filename}
 
 
 def _set_ignored_version(version):
@@ -222,9 +227,11 @@ async def update_module_firmware(request):
     """
     log.debug('Update Firmware request received')
     data = await request.post()
+    module_serial = request.match_info['serial']
     try:
-        res = await  install_module_firmware(data['module_firmware'],
-                                             request.loop)
+        res = await install_module_firmware(module_serial,
+                                            data['module_firmware'],
+                                            request.loop)
         status = 200
     except Exception as e:
         log.exception("Exception during firmware update:")

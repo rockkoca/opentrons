@@ -160,6 +160,7 @@ class MagDeck:
             log.debug('Firmware uploaded successfully')
         else:
             log.debug('Firmware upload failed\n{}'.format(res.strip()))
+        return res.strip()
 
 
 def discover_ports():
