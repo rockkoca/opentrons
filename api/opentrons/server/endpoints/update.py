@@ -58,10 +58,33 @@ async def _update_module_firmware(serialnum, filename, config_file_path, loop):
         robot.connect()
         robot.modules = modules.discover_and_connect()
     robot._driver.simulating = False
-    md = [
-        module for module in robot.modules
-        if module.device_info.get('serial') is serialnum
-    ]
-    res = await md.update_firmware(filename, config_file_path)
+    res = ''
+    for module in robot.modules:
+        md_serial = module.device_info.get('serial')
+        print("Module serial: __{}__".format(md_serial))
+        if md_serial == serialnum:
+            print("Module with serial found!")
+            port_name = module.enter_bootloader()
+            avrdude_params = {
+                'config_file': config_file_path,
+                'part_no': 'atmega32u4',
+                'programmer_id': 'avr109',
+                'port_name': port_name,
+                'baudrate': '57600',
+                'firmware_file': filename
+            }
+            avrdude_cmd = "avrdude -C{config_file} -v -p{part_no} " \
+                          "-c{programmer_id} -P{port_name} -b{baudrate} -D " \
+                          "-Uflash:w:{firmware_file}:i"\
+                .format(**avrdude_params)
+            print(avrdude_cmd)
+            proc = await asyncio.create_subprocess_shell(
+                avrdude_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                loop=loop)
+            rd = await proc.stdout.read()
+            res = rd.decode().strip()
+            await proc.wait()
+            break
     robot._driver.simulating = True
-    return res
+    return res if res else 'No module {} found'.format(serialnum)
