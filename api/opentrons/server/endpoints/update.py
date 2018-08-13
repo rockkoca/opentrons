@@ -44,7 +44,7 @@ async def _update_firmware(filename, loop):
     return res
 
 
-async def _update_module_firmware(serialnum, filename, config_file_path, loop):
+async def _update_module_firmware(serialnum, filename, config_file_path, loop=None):
     """
     This method remains in the API currently because of its use of the robot
     singleton's copy of the api object & driver. This should move to the server
@@ -64,27 +64,10 @@ async def _update_module_firmware(serialnum, filename, config_file_path, loop):
         print("Module serial: __{}__".format(md_serial))
         if md_serial == serialnum:
             print("Module with serial found!")
-            port_name = module.enter_bootloader()
-            avrdude_params = {
-                'config_file': config_file_path,
-                'part_no': 'atmega32u4',
-                'programmer_id': 'avr109',
-                'port_name': port_name,
-                'baudrate': '57600',
-                'firmware_file': filename
-            }
-            avrdude_cmd = "avrdude -C{config_file} -v -p{part_no} " \
-                          "-c{programmer_id} -P{port_name} -b{baudrate} -D " \
-                          "-Uflash:w:{firmware_file}:i"\
-                .format(**avrdude_params)
-            print(avrdude_cmd)
-            proc = await asyncio.create_subprocess_shell(
-                avrdude_cmd,
-                stdout=asyncio.subprocess.PIPE,
-                loop=loop)
-            rd = await proc.stdout.read()
-            res = rd.decode().strip()
-            await proc.wait()
+            port = module.enter_bootloader()
+            res = await module.update_firmware(
+                port, filename, config_file_path, loop=loop)
             break
+    print("Turning simulation ON")
     robot._driver.simulating = True
     return res if res else 'No module {} found'.format(serialnum)

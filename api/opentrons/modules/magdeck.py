@@ -1,6 +1,7 @@
 import os
-import subprocess
+# import subprocess
 import logging
+import asyncio
 from time import sleep
 from opentrons.drivers.mag_deck import MagDeck as MagDeckDriver
 from opentrons import commands
@@ -116,28 +117,39 @@ class MagDeck:
         enter bootloader on a different port
         """
         old_ports = discover_ports()
+        print("Old ports: {}".format(old_ports))
+        print("### self._port is: {} ###".format(self._port))
         port = self._port
         self.disconnect()
         new_ports = discover_ports()
+        print("New ports: {}".format(new_ports))
         if not old_ports == new_ports and len(old_ports) == len(new_ports):
             for _port in new_ports:
                 if _port not in old_ports:
                     absolute_port = '/dev/modules/{}'.format(_port)
-                    port = absolute_port
-        self._driver.connect(port, 1200)
-        sleep(2)
+                    print("Switching to new port: {}".format(absolute_port))
+                    self.port = absolute_port
+        else:
+            print("No new port detected. Sticking with the old port")
+        print("Connecting at baud 1200")
+        self._driver.connect(self.port, 1200)
+        sleep(5)
+        print("Disconnecting baud 1200 port")
         self._driver.disconnect()
         sleep(5)    # Wait for the new port to register
         return port
 
-    def update_firmware(self, firmware_file_path, config_file_path):
+    async def update_firmware(
+            self, port, firmware_file_path, config_file_path, loop=None):
         """
         Enter bootloader then run avrdude firmware upload command
         :return:
         """
-        # Make sure the module isn't in the middle of operation
-        self.disengage()
-        port = self.enter_bootloader()
+        # TODO: Make sure the module isn't in the middle of operation
+
+        old_ports = discover_ports()
+        print("Old ports: {}".format(old_ports))
+
         avrdude_cmd = {
             'config_file': config_file_path,
             'part_no': 'atmega32u4',
@@ -146,21 +158,36 @@ class MagDeck:
             'baudrate': '57600',
             'firmware_file': firmware_file_path
         }
-        res = subprocess.run(
+        proc = await asyncio.create_subprocess_shell(
             'avrdude '
             '-C{config_file} '
             '-v -p{part_no} '
             '-c{programmer_id} '
             '-P{port_name} '
             '-b{baudrate} -D '
-            '-Uflash:w:{firmware_file}:i'.format(**avrdude_cmd), shell=True,
-            stdout=subprocess.PIPE).stdout.decode()
+            '-Uflash:w:{firmware_file}:i'.format(**avrdude_cmd),
+            stdout=asyncio.subprocess.PIPE,
+            loop=loop
+        )
 
+        rd = await proc.stdout.read()
+        res = rd.decode().strip()
+        await proc.wait()
+        new_ports = discover_ports()
+        print("New ports: {}".format(new_ports))
+        if not old_ports == new_ports and len(old_ports) == len(new_ports):
+            for _port in new_ports:
+                if _port not in old_ports:
+                    self._port = _port
+        else:
+            print("Currently self._port is: {} ###".format(self._port))
         if 'flash verified' in res:
             log.debug('Firmware uploaded successfully')
+            print('Firmware uploaded successfully')
         else:
-            log.debug('Firmware upload failed\n{}'.format(res.strip()))
-        return res.strip()
+            log.debug('Firmware upload failed\n{}'.format(res))
+            print('Firmware upload failed\n{}'.format(res))
+        return res
 
 
 def discover_ports():

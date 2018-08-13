@@ -66,7 +66,7 @@ async def install_smoothie_firmware(data, loop):
     return {'message': msg, 'filename': filename}
 
 
-async def install_module_firmware(module_serial, data, loop):
+async def install_module_firmware(module_serial, data, loop=None):
     import opentrons
     from opentrons.server.endpoints.update import _update_module_firmware
 
@@ -83,7 +83,7 @@ async def install_module_firmware(module_serial, data, loop):
         'config', 'modules', 'avrdude.conf')
 
     msg = await _update_module_firmware(module_serial, fw_filename,
-                                        config_file_path, loop)
+                                        config_file_path, loop=loop)
     log.debug('Firmware update complete')
     try:
         os.remove(fw_filename)
