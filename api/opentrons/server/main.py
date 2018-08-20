@@ -304,6 +304,7 @@ def main():
         robot.home_z()
 
     if not os.environ.get("ENABLE_VIRTUAL_SMOOTHIE"):
+        log.info("Setting up Opentrons udev rules")
         setup_udev_rules_file()
     # Explicitly unlock resin updates in case a prior server left them locked
     unlock_resin_updates()
