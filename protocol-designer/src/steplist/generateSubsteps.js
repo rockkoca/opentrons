@@ -27,12 +27,15 @@ import {
   consolidate,
   distribute,
   transfer,
-  mix
+  mix,
+  getPipetteChannels
 } from '../step-generation'
 
 import type {
   AspirateDispenseArgs,
-  RobotState
+  Command,
+  RobotState,
+  CommandsAndRobotState
 } from '../step-generation'
 
 import type {
@@ -56,40 +59,24 @@ type AspDispCommandType = {
   params: AspirateDispenseArgs
 }
 
-function transferLikeSubsteps (args: {
+/** "Simulate" a step from a validatedForm to get commands relevant for substeps.
+  * Call the CommandCreator for the step with a simplified set of arguments,
+  * so only the important asp/disp commands will be passed along.
+  * (Asp/disp commands for "Mix" settings in transfer-likes will not be generated.)
+  */
+function simulateSimplifiedStep (args: {
   validatedForm: ConsolidateFormData | DistributeFormData | TransferFormData | MixFormData,
-  allPipetteData: AllPipetteData,
-  getIngreds: GetIngreds,
-  getLabwareType: GetLabwareType,
-  robotState: RobotState,
-  stepId: number
-}): ?SourceDestSubstepItem {
-  const {
-    validatedForm,
-    allPipetteData,
-    getIngreds,
-    getLabwareType,
-    stepId
-  } = args
+  prevRobotState: RobotState,
+  startWithTips?: boolean
+}): ?CommandsAndRobotState {
+  const {validatedForm, startWithTips} = args
+  const robotState = cloneDeep(args.prevRobotState)
 
   // Add tips to pipettes, since this is just a "simulation"
   // TODO: Ian 2018-07-31 develop more elegant way to bypass tip handling for simulation/test
-  const robotState = cloneDeep(args.robotState)
-  robotState.tipState.pipettes = mapValues(robotState.tipState.pipettes, () => true)
-
-  const {
-    pipette: pipetteId
-  } = validatedForm
-
-  const pipette = allPipetteData[pipetteId]
-
-  // TODO Ian 2018-04-06 use assert here
-  if (!pipette) {
-    console.warn(`Pipette "${pipetteId}" does not exist, step ${stepId} can't determine channels`)
+  if (startWithTips) {
+    robotState.tipState.pipettes = mapValues(robotState.tipState.pipettes, () => true)
   }
-
-  // if false, show aspirate vol instead
-  const showDispenseVol = validatedForm.stepType === 'distribute'
 
   let result
 
@@ -131,11 +118,37 @@ function transferLikeSubsteps (args: {
     return null
   }
 
+  return result
+}
+
+function transferLikeSubsteps (args: {
+  commands: Array<Command>,
+  getIngreds: GetIngreds,
+  getLabwareType: GetLabwareType,
+  robotState: RobotState,
+  stepId: number,
+  validatedForm: ConsolidateFormData | DistributeFormData | TransferFormData | MixFormData
+}): ?SourceDestSubstepItem {
+  const {
+    commands,
+    getIngreds,
+    getLabwareType,
+    robotState,
+    stepId,
+    validatedForm
+  } = args
+
+  const channels = getPipetteChannels(validatedForm.pipette, robotState)
+  if (!channels) return null
+
+  // if false, show aspirate vol instead
+  const showDispenseVol = validatedForm.stepType === 'distribute'
+
   // Multichannel substeps
-  if (pipette.channels > 1) {
-    const aspDispMultiRows: SourceDestSubstepItemMultiRows = result.commands.reduce((acc, c, commandIdx) => {
+  if (channels > 1) {
+    const aspDispMultiRows: SourceDestSubstepItemMultiRows = commands.reduce((acc, c, commandIdx) => {
       if (c.command === 'aspirate' || c.command === 'dispense') {
-        const rows = commandToMultiRows(c, getIngreds, getLabwareType, pipette.channels)
+        const rows = commandToMultiRows(c, getIngreds, getLabwareType, channels)
         return rows ? [...acc, rows] : acc
       }
       return acc
@@ -151,7 +164,7 @@ function transferLikeSubsteps (args: {
       },
       // Merge each channel row together when predicate true
       (currentMultiRow, nextMultiRow) => {
-        return range(pipette.channels).map(channel => ({
+        return range(channels).map(channel => ({
           ...currentMultiRow[channel],
           ...nextMultiRow[channel],
           volume: showDispenseVol
@@ -170,7 +183,7 @@ function transferLikeSubsteps (args: {
   }
 
   // Single-channel rows
-  const aspDispRows: SourceDestSubstepItemRows = result.commands.reduce((acc, c, commandIdx) => {
+  const aspDispRows: SourceDestSubstepItemRows = commands.reduce((acc, c, commandIdx) => {
     if (c.command === 'aspirate' || c.command === 'dispense') {
       const row = commandToRows(c, getIngreds)
       return row ? [...acc, row] : acc
@@ -301,12 +314,18 @@ export function generateSubsteps (
     validatedForm.stepType === 'transfer' ||
     validatedForm.stepType === 'mix'
   ) {
+    const commandsAndRobotState = simulateSimplifiedStep({
+      validatedForm,
+      prevRobotState: robotState,
+      startWithTips: true
+    })
+    if (!commandsAndRobotState) return null
     return transferLikeSubsteps({
       validatedForm,
-      allPipetteData,
       getIngreds,
       getLabwareType,
-      robotState,
+      robotState: commandsAndRobotState.robotState,
+      commands: commandsAndRobotState.commands,
       stepId
     })
   }
