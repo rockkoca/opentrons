@@ -40,6 +40,7 @@ export const allSubsteps: Selector<AllSubsteps> = createSelector(
   allWellContentsForSteps,
   steplistSelectors.orderedSteps,
   fileDataSelectors.robotStateTimeline,
+  fileDataSelectors.getInitialRobotState,
   (
     validatedForms,
     allPipetteData,
@@ -47,19 +48,25 @@ export const allSubsteps: Selector<AllSubsteps> = createSelector(
     ingredNames,
     _allWellContentsForSteps,
     orderedSteps,
-    robotStateTimeline
+    robotStateTimeline,
+    initialRobotState
   ) => {
     return orderedSteps
     .reduce((acc: AllSubsteps, stepId, timelineIndex) => {
-      const robotState = robotStateTimeline.timeline[timelineIndex] &&
-        robotStateTimeline.timeline[timelineIndex].robotState
+      // TODO: Ian 2018-08-21 make a util fn or selector for prev timeline frame,
+      // using initialRobotState if timelineIndex === 0, otherwise [timelineIndex - 1]
+      // and using lastValidRobotState when timelineIndex exceeds timeline len.
+      // That fn/selector would also be useful in tip-contents and well-contents.
+      const prevRobotState = robotStateTimeline.timeline[timelineIndex - 1]
+        ? robotStateTimeline.timeline[timelineIndex - 1].robotState
+        : initialRobotState
 
       const substeps = generateSubsteps(
         validatedForms[stepId],
         allPipetteData,
         (labwareId: string) => allLabwareTypes[labwareId],
         getIngredsFactory(_allWellContentsForSteps[timelineIndex], ingredNames),
-        robotState,
+        prevRobotState,
         stepId
       )
       return {

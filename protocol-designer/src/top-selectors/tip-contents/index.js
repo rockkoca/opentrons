@@ -8,6 +8,7 @@ import {
   END_TERMINAL_ITEM_ID
 } from '../../steplist'
 import {selectors as fileDataSelectors} from '../../file-data'
+import {allSubsteps as getAllSubsteps} from '../substeps'
 import {getWellSetForMultichannel} from '../../well-selection/utils'
 
 import type {BaseState} from '../../types'
@@ -87,12 +88,33 @@ const getLastValidTips: GetTipSelector = createSelector(
 export const getTipsForCurrentStep: GetTipSelector = createSelector(
   steplistSelectors.orderedSteps,
   fileDataSelectors.robotStateTimeline,
+  fileDataSelectors.getInitialRobotState,
   steplistSelectors.getHoveredStepId,
+  steplistSelectors.getHoveredSubstep,
   steplistSelectors.getActiveItem,
+  getAllSubsteps,
   getInitialTips,
   getLastValidTips,
   getLabwareIdProp,
-  (orderedSteps, robotStateTimeline, hoveredStepId, activeItem, initialTips, lastValidTips, labwareId) => {
+  (orderedSteps, robotStateTimeline, initialRobotState, hoveredStepId, hoveredSubstep, activeItem, allSubsteps, initialTips, lastValidTips, labwareId) => {
+    if (hoveredSubstep) {
+      const foo = allSubsteps[hoveredSubstep.stepId]
+      // TODO IMMEDIATELY non-HACK handling of stepType !== 'pause'
+      // TODO IMMEDIATELY 8-channel
+      if (foo && foo.stepType !== 'pause' && !foo.multichannel) { // HACK
+        const substepRow = foo.rows[hoveredSubstep.substepIndex]
+        const tipLocation = substepRow.primaryTipLocation
+        return (tipLocation && labwareId === tipLocation.labware)
+          ? (wellName: string) => ({
+            highlighted: wellName === tipLocation.well,
+            // TODO IMMEDIATELY - DRY this it's copied from below...
+            empty: (prevFrame)
+              ? getTipEmpty(wellName, labwareId, prevFrame.robotState)
+              : getTipEmpty(wellName, labwareId, initialRobotState)
+          })
+          : noop
+      }
+    }
     if (!activeItem.isStep) {
       const terminalId = activeItem.id
       if (terminalId === START_TERMINAL_ITEM_ID) {
@@ -124,7 +146,7 @@ export const getTipsForCurrentStep: GetTipSelector = createSelector(
       // show empty/present tip state at end of previous frame
       const empty = (prevFrame)
         ? getTipEmpty(wellName, labwareId, prevFrame.robotState)
-        : false
+        : getTipEmpty(wellName, labwareId, initialRobotState)
 
       // show highlights of tips used by current frame, if user is hovering
       const highlighted = (hovered && currentFrame)

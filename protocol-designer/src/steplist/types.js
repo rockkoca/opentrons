@@ -21,13 +21,19 @@ export type NamedIngred = {|
   name: string
 |}
 
+export type PrimaryTipLocation = {
+  labware: string,
+  well: string
+}
+
 export type StepItemSourceDestRow = {|
   substepIndex?: number,
   sourceIngredients?: Array<NamedIngred>,
   destIngredients?: Array<NamedIngred>,
   sourceWell?: ?string,
   destWell?: ?string,
-  volume?: ?number
+  volume?: ?number,
+  primaryTipLocation?: ?PrimaryTipLocation
 |}
 
 export type StepItemSourceDestRowMulti = {

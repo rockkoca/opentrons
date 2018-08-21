@@ -1,7 +1,7 @@
 // @flow
 import cloneDeep from 'lodash/cloneDeep'
+import compact from 'lodash/compact'
 import range from 'lodash/range'
-import mapValues from 'lodash/mapValues'
 
 import type {Channels} from '@opentrons/components'
 import {getWellsForTips} from '../step-generation/utils'
@@ -16,11 +16,11 @@ import {
 } from './formProcessing'
 
 import type {
+  PrimaryTipLocation,
   SubstepItemData,
   SourceDestSubstepItem,
   StepItemSourceDestRow,
-  StepItemSourceDestRowMulti,
-  SourceDestSubstepItemSingleChannel
+  StepItemSourceDestRowMulti
 } from './types'
 
 import {
@@ -48,7 +48,6 @@ import type {
 } from '../step-generation/types'
 
 type AllPipetteData = {[pipetteId: string]: PipetteData}
-type SourceDestSubstepItemRows = $PropertyType<SourceDestSubstepItemSingleChannel, 'rows'>
 type SourceDestSubstepItemMultiRows = Array<Array<StepItemSourceDestRowMulti>>
 
 export type GetIngreds = (labware: string, well: string) => Array<NamedIngred>
@@ -66,18 +65,10 @@ type AspDispCommandType = {
   */
 function simulateSimplifiedStep (args: {
   validatedForm: ConsolidateFormData | DistributeFormData | TransferFormData | MixFormData,
-  prevRobotState: RobotState,
-  startWithTips?: boolean
+  prevRobotState: RobotState
 }): ?CommandsAndRobotState {
-  const {validatedForm, startWithTips} = args
+  const {validatedForm} = args
   const robotState = cloneDeep(args.prevRobotState)
-
-  // Add tips to pipettes, since this is just a "simulation"
-  // TODO: Ian 2018-07-31 develop more elegant way to bypass tip handling for simulation/test
-  if (startWithTips) {
-    robotState.tipState.pipettes = mapValues(robotState.tipState.pipettes, () => true)
-  }
-
   let result
 
   // Call appropriate command creator with the validateForm fields.
@@ -121,6 +112,35 @@ function simulateSimplifiedStep (args: {
   return result
 }
 
+type CommandsByTipPartition = {
+  primaryTipLocation: ?PrimaryTipLocation,
+  commands: Array<Command>
+}
+export function partitionCommandsByTipUse (
+  commands: Array<Command>,
+  initialTip?: ?PrimaryTipLocation = null
+): Array<CommandsByTipPartition> {
+  let result = [{commands: [], primaryTipLocation: initialTip}]
+  let partitionIndex = 0
+  commands.forEach((c, cmdIndex) => {
+    if (c.command === 'pick-up-tip') {
+      const {labware, well} = c.params
+      const primaryTipLocation = {labware, well}
+
+      if (cmdIndex !== 0) {
+        partitionIndex += 1
+      }
+
+      result[partitionIndex] = {commands: [], primaryTipLocation}
+    }
+
+    if (c.command !== 'pick-up-tip' && c.command !== 'drop-tip') {
+      result[partitionIndex].commands.push(c)
+    }
+  })
+  return result
+}
+
 function transferLikeSubsteps (args: {
   commands: Array<Command>,
   getIngreds: GetIngreds,
@@ -144,15 +164,23 @@ function transferLikeSubsteps (args: {
   // if false, show aspirate vol instead
   const showDispenseVol = validatedForm.stepType === 'distribute'
 
+  const partitionedCommands = partitionCommandsByTipUse(commands)
+
+  const aspDispCommandSets = partitionedCommands.map(commandPartition => {
+    // $FlowFixMe filter doesn't infer correct type
+    const aspDispCommands: Array<AspDispCommandType> = commandPartition.commands.filter(c =>
+      c.command === 'aspirate' || c.command === 'dispense')
+    return aspDispCommands
+  })
+
   // Multichannel substeps
   if (channels > 1) {
-    const aspDispMultiRows: SourceDestSubstepItemMultiRows = commands.reduce((acc, c, commandIdx) => {
-      if (c.command === 'aspirate' || c.command === 'dispense') {
-        const rows = commandToMultiRows(c, getIngreds, getLabwareType, channels)
-        return rows ? [...acc, rows] : acc
-      }
-      return acc
-    }, [])
+    const aspDispMultiRows: SourceDestSubstepItemMultiRows = aspDispCommandSets.reduce(
+      (acc, cmdSet, substepIndex) => {
+        const rows = cmdSet.map(cmd =>
+          commandToMultiRows(cmd, getIngreds, getLabwareType, channels, substepIndex))
+        return [...acc, ...compact(rows)]
+      }, [])
 
     const mergedMultiRows: SourceDestSubstepItemMultiRows = steplistUtils.mergeWhen(
       aspDispMultiRows,
@@ -183,33 +211,34 @@ function transferLikeSubsteps (args: {
   }
 
   // Single-channel rows
-  const aspDispRows: SourceDestSubstepItemRows = commands.reduce((acc, c, commandIdx) => {
-    if (c.command === 'aspirate' || c.command === 'dispense') {
-      const row = commandToRows(c, getIngreds)
-      return row ? [...acc, row] : acc
-    }
-    return acc
-  }, [])
-
-  const mergedRows: SourceDestSubstepItemRows = steplistUtils.mergeWhen(
-    aspDispRows,
-    (currentRow, nextRow) =>
-      // aspirate then dispense rows adjacent
-      currentRow.sourceWell && nextRow.destWell,
-    (currentRow, nextRow) => ({
-      ...nextRow,
-      ...currentRow,
-      volume: showDispenseVol
-        ? nextRow.volume
-        : currentRow.volume
-    })
-  )
+  const mergedRows = partitionedCommands
+    .map((cmdSet, substepIndex) =>
+      cmdSet.commands.reduce((currentRow, cmd) => {
+        if (cmd.command !== 'aspirate' && cmd.command !== 'dispense') {
+          return currentRow
+        }
+        const nextRow = commandToRows(cmd, getIngreds)
+        if (!nextRow) {
+          return currentRow
+        }
+        const volume = showDispenseVol
+          ? currentRow && currentRow.volume
+          : nextRow.volume
+        return {
+          ...nextRow,
+          ...currentRow,
+          volume,
+          substepIndex,
+          primaryTipLocation: cmdSet.primaryTipLocation
+        }
+      }, null)
+    )
 
   return {
     multichannel: false,
     stepType: validatedForm.stepType,
     parentStepId: stepId,
-    rows: mergedRows
+    rows: compact(mergedRows)
   }
 }
 
@@ -242,7 +271,8 @@ function commandToMultiRows (
   command: AspDispCommandType,
   getIngreds: GetIngreds,
   getLabwareType: GetLabwareType,
-  channels: Channels
+  channels: Channels,
+  substepIndex: number
 ): ?Array<StepItemSourceDestRowMulti> {
   const labwareId = command.params.labware
   const labwareType = getLabwareType(labwareId)
@@ -263,7 +293,8 @@ function commandToMultiRows (
         channelId: channel,
         sourceIngredients: ingreds,
         sourceWell: well,
-        volume
+        volume,
+        substepIndex
       }
     }
     if (command.command !== 'dispense') {
@@ -275,7 +306,8 @@ function commandToMultiRows (
       channelId: channel,
       destIngredients: ingreds,
       destWell: well,
-      volume
+      volume,
+      substepIndex
     }
   })
 }
@@ -316,8 +348,7 @@ export function generateSubsteps (
   ) {
     const commandsAndRobotState = simulateSimplifiedStep({
       validatedForm,
-      prevRobotState: robotState,
-      startWithTips: true
+      prevRobotState: robotState
     })
     if (!commandsAndRobotState) return null
     return transferLikeSubsteps({
