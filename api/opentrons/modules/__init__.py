@@ -10,7 +10,7 @@ from opentrons import robot, labware
 
 log = logging.getLogger(__name__)
 
-PORT_SEARCH_TIMEOUT = 4
+PORT_SEARCH_TIMEOUT = 7
 SUPPORTED_MODULES = {'magdeck': MagDeck, 'tempdeck': TempDeck}
 
 
@@ -95,16 +95,15 @@ def enter_bootloader(module):
     module._driver.enter_programming_mode()
     module.disconnect()
 
-    # Check for bootloader port
-    port_poller = Process(target=port_poll, args=(
-        module, ports_before_dfu_mode))
-    port_poller.start()
-    port_poller.join(timeout=PORT_SEARCH_TIMEOUT)
-    print("Time out")
-    print("Process ended with exitcode: {}".format(port_poller.exitcode))
-    if port_poller.exitcode and port_poller.exitcode > 0:
-        raise ConnectionError
-    port_poller.terminate()
+    port_poll_timer = Process(target=timer)
+    port_poll_timer.start()
+    while port_poll_timer.is_alive():
+        new_port = port_poll(has_old_bootloader(module), ports_before_dfu_mode)
+        if new_port:
+            print("Found new port!: {}".format(new_port))
+            module._port = new_port
+            break
+    print("Timed out or found new port!")
 
 
 async def update_firmware(module, firmware_file_path, config_file_path, loop):
@@ -117,7 +116,7 @@ async def update_firmware(module, firmware_file_path, config_file_path, loop):
     # TODO: Make sure the module isn't in the middle of operation
 
     ports_before_update = discover_ports()
-
+    print("update_firmware sending file to port:{}".format(module._port))
     avrdude_cmd = {
         'config_file': config_file_path,
         'part_no': 'atmega32u4',
@@ -149,42 +148,36 @@ async def update_firmware(module, firmware_file_path, config_file_path, loop):
     return res
 
 
-# TODO: For all port polling, ensure that port state is stable before selecting
+def timer():
+    sleep(PORT_SEARCH_TIMEOUT)
+
+
 def port_on_mode_switch(ports_before_switch):
     ports_after_switch = discover_ports()
     new_port = ''
-    # print("New ports: {}".format(ports_after_switch))
     if len(ports_after_switch) > 0 and \
             not set(ports_before_switch) == set(ports_after_switch):
-        print("Old ports: {}, New ports: {}".format(
-            ports_before_switch, ports_after_switch))
         new_ports = list(filter(
             lambda x: x not in ports_before_switch,
             ports_after_switch))
-        print("Probable bootloader port: {}".format(new_ports[0]))
         # Ideally, should raise an error if len(new_ports) is > 1
         new_port = '/dev/modules/{}'.format(new_ports[0])
-        print("Switching to new port: {}".format(new_port))
     return new_port
 
 
-def port_poll(module, ports_before_switch=None):
+def port_poll(has_old_bootloader, ports_before_switch=None):
     """
-    Times out in PORT_SEARCH_TIMEOUT seconds
+    Checks for the bootloader port
     """
-    while True:
-        if has_old_bootloader(module):
-            new_port = port_on_mode_switch(ports_before_switch)
-            if not new_port == '':
-                module._port = new_port
-                break   # else assume that the port stayed the same
-            sleep(1)
-        else:
-            discovered_ports = list(filter(
-                lambda x: x.endswith('bootloader'), discover_ports()))
-            if len(discovered_ports) == 1:
-                module._port = '/dev/modules/{}'.format(discovered_ports[0])
-                break
+    new_port = ''
+    if has_old_bootloader:
+        new_port = port_on_mode_switch(ports_before_switch)
+    else:
+        discovered_ports = list(filter(
+            lambda x: x.endswith('bootloader'), discover_ports()))
+        if len(discovered_ports) == 1:
+            new_port = '/dev/modules/{}'.format(discovered_ports[0])
+    return new_port
 
 
 def has_old_bootloader(module):
