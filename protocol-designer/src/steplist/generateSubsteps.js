@@ -1,7 +1,9 @@
 // @flow
 import cloneDeep from 'lodash/cloneDeep'
 import compact from 'lodash/compact'
+import flatten from 'lodash/flatten'
 import range from 'lodash/range'
+import last from 'lodash/last'
 
 import type {Channels} from '@opentrons/components'
 import {getWellsForTips} from '../step-generation/utils'
@@ -213,32 +215,55 @@ function transferLikeSubsteps (args: {
   // Single-channel rows
   const mergedRows = partitionedCommands
     .map((cmdSet, substepIndex) =>
-      cmdSet.commands.reduce((currentRow, cmd) => {
+      cmdSet.commands.reduce((rowAcc: Array<?StepItemSourceDestRow>, cmd) => {
         if (cmd.command !== 'aspirate' && cmd.command !== 'dispense') {
-          return currentRow
+          return rowAcc
         }
-        const nextRow = commandToRows(cmd, getIngreds)
-        if (!nextRow) {
-          return currentRow
+        const currentRow = commandToRows(cmd, getIngreds)
+        if (!currentRow) {
+          return rowAcc
         }
+
+        const prevRow = rowAcc && last(rowAcc)
+
         const volume = showDispenseVol
-          ? currentRow && currentRow.volume
-          : nextRow.volume
-        return {
-          ...nextRow,
-          ...currentRow,
-          volume,
-          substepIndex,
-          primaryTipLocation: cmdSet.primaryTipLocation
-        }
-      }, null)
+          ? prevRow && prevRow.volume
+          : currentRow.volume
+
+        const primaryTipLocation = cmdSet.primaryTipLocation
+
+        const shouldMerge = Boolean(prevRow && !prevRow.destIngredients && currentRow.destIngredients)
+        if (validatedForm.stepType === 'distribute') console.log({substepIndex, currentRow, shouldMerge, rowAcc})
+        return shouldMerge
+          ? [
+            ...rowAcc.slice(0, -1),
+            {
+              ...currentRow,
+              ...prevRow,
+              volume,
+              substepIndex,
+              primaryTipLocation
+            }
+          ]
+          : [
+            ...rowAcc,
+            {
+              ...currentRow,
+              primaryTipLocation
+            }
+          ]
+      }, [])
     )
+
+  if (validatedForm.stepType === 'distribute') {
+    console.log({partitionedCommands, mergedRows})
+  }
 
   return {
     multichannel: false,
     stepType: validatedForm.stepType,
     parentStepId: stepId,
-    rows: compact(mergedRows)
+    rows: compact(flatten(mergedRows))
   }
 }
 
