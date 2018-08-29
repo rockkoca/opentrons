@@ -1,10 +1,5 @@
-import logging
-
 from opentrons.drivers.mag_deck import MagDeck as MagDeckDriver
 from opentrons import commands
-
-
-log = logging.getLogger(__name__)
 
 
 class MissingDevicePortError(Exception):

@@ -84,11 +84,13 @@ def discover_and_connect():
 
 def enter_bootloader(module):
     """
-    Disconnect from current port, connect at 1200 baud and disconnect to
-    enter bootloader on a (possibly) different port. On disconnect, the
-    kernel could assign it a lower port number if available, or keep it on
-    the same port. So we check for changes in port assigned and use the
-    appropriate one
+    Using the driver method, enter bootloader mode of the atmega32u4. The bootloader mode opens a new port on the uC to
+    upload the hex file. After receiving a 'dfu' command, the firmware provides a 3-second window to close the
+    current port so as to do a clean switch to the bootloader port. The new port shows up as 'ttyn_bootloader' on the pi
+    Use this port to upload firmware
+    NOTE: Modules with old bootloader will have the bootloader port show up as a regular module port- 'ttyn_tempdeck'/
+    'ttyn_magdeck' with the port number being either different or same as the one that the module was originally on.
+    So we check for changes in ports and use the appropriate one
     """
     ports_before_dfu_mode = discover_ports()  # Required only for old bootloadr
 
@@ -107,10 +109,10 @@ def enter_bootloader(module):
 
 async def update_firmware(module, firmware_file_path, config_file_path, loop):
     """
-    Enter bootloader then run avrdude firmware upload command. The kernel
-    could assign the module a new port after the update (since the board is
-    automatically reset). Scan for such a port change and use the
-    appropriate port
+    Run avrdude firmware upload command. Switch back to normal module port
+
+    Note: For modules with old bootloader, the kernel could assign the module a new port after the update
+    (since the board is automatically reset). Scan for such a port change and use the appropriate port
     """
     # TODO: Make sure the module isn't in the middle of operation
 
@@ -124,7 +126,7 @@ async def update_firmware(module, firmware_file_path, config_file_path, loop):
         'baudrate': '57600',
         'firmware_file': firmware_file_path
     }
-    proc = await asyncio.create_subprocess_shell(
+    proc = await asyncio.create_subprocess_exec(
         'avrdude '
         '-C{config_file} '
         '-v -p{part_no} '
@@ -166,12 +168,12 @@ def port_on_mode_switch(ports_before_switch):
     return new_port
 
 
-def port_poll(has_old_bootloader, ports_before_switch=None):
+def port_poll(old_bootloader, ports_before_switch=None):
     """
     Checks for the bootloader port
     """
     new_port = ''
-    if has_old_bootloader:
+    if old_bootloader:
         new_port = port_on_mode_switch(ports_before_switch)
     else:
         discovered_ports = list(filter(
