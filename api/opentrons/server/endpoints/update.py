@@ -60,14 +60,12 @@ async def _update_module_firmware(
     for module in robot.modules:
         module.disconnect()
     robot.modules = modules.discover_and_connect()
-    # robot._driver.simulating = False
     res = ''
     for module in robot.modules:
         if module.device_info.get('serial') == serialnum:
-            print("Module with serial found!")
+            print("Module with serial found")
             modules.enter_bootloader(module)
             res = await modules.update_firmware(
                 module, fw_filename, config_file_path, loop)
             break
-    # robot._driver.simulating = True
-    return res if res else 'Module update error on {}!'.format(serialnum)
+    return res

@@ -10,7 +10,7 @@ from opentrons import robot, labware
 
 log = logging.getLogger(__name__)
 
-PORT_SEARCH_TIMEOUT = 7
+PORT_SEARCH_TIMEOUT = 5.5
 SUPPORTED_MODULES = {'magdeck': MagDeck, 'tempdeck': TempDeck}
 
 
@@ -100,10 +100,9 @@ def enter_bootloader(module):
     while port_poll_timer.is_alive():
         new_port = port_poll(has_old_bootloader(module), ports_before_dfu_mode)
         if new_port:
-            print("Found new port!: {}".format(new_port))
+            print("Found new port: {}".format(new_port))
             module._port = new_port
             break
-    print("Timed out or found new port!")
 
 
 async def update_firmware(module, firmware_file_path, config_file_path, loop):
@@ -133,19 +132,21 @@ async def update_firmware(module, firmware_file_path, config_file_path, loop):
         '-P{port_name} '
         '-b{baudrate} -D '
         '-Uflash:w:{firmware_file}:i'.format(**avrdude_cmd),
-        stdout=asyncio.subprocess.PIPE, loop=loop)
-    rd = await proc.stdout.read()
-    res = rd.decode().strip()
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE, loop=loop)
     await proc.wait()
+    _res = await proc.communicate()
+    res = _res[1].decode().strip()
 
     print("Switching back to non-bootloader port")
     module._port = port_on_mode_switch(ports_before_update)
 
     if 'flash verified' in res:
-        log.debug('Firmware uploaded successfully')
+        msg = 'Firmware uploaded successfully'
     else:
-        log.debug('Firmware upload failed\n{}'.format(res))
-    return res
+        msg = 'Firmware upload failed\n{}'.format(res)
+    log.debug(msg)
+    return msg
 
 
 def timer():
@@ -155,7 +156,7 @@ def timer():
 def port_on_mode_switch(ports_before_switch):
     ports_after_switch = discover_ports()
     new_port = ''
-    if len(ports_after_switch) > 0 and \
+    if len(ports_after_switch) >= len(ports_before_switch) and \
             not set(ports_before_switch) == set(ports_after_switch):
         new_ports = list(filter(
             lambda x: x not in ports_before_switch,
