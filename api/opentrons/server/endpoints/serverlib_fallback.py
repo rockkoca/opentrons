@@ -66,33 +66,6 @@ async def install_smoothie_firmware(data, loop):
     return {'message': msg, 'filename': filename}
 
 
-async def install_module_firmware(module_serial, data, loop=None):
-    import opentrons
-    from opentrons.server.endpoints.update import _update_module_firmware
-
-    fw_filename = data.filename
-    log.info('Flashing image "{}", this will take about a minute'.format(
-        fw_filename))
-    content = data.file.read()
-
-    with open(fw_filename, 'wb') as wf:
-        wf.write(content)
-
-    config_file_path = os.path.join(
-        os.path.abspath(os.path.dirname(opentrons.__file__)),
-        'config', 'modules', 'avrdude.conf')
-
-    msg = await _update_module_firmware(module_serial, fw_filename,
-                                        config_file_path, loop=loop)
-    log.debug('Firmware update complete')
-    try:
-        os.remove(fw_filename)
-    except OSError:
-        pass
-    log.debug("Result: {}".format(msg))
-    return {'message': msg, 'filename': fw_filename}
-
-
 def _set_ignored_version(version):
     """
     Private helper function that writes the most updated
@@ -213,30 +186,6 @@ async def update_firmware(request):
         log.exception("Exception during firmware update:")
         res = {'message': 'Exception {} raised by update of {}: {}'.format(
                 type(e), data, e.__traceback__)}
-        status = 500
-    return web.json_response(res, status=status)
-
-
-async def update_module_firmware(request):
-    """
-     This handler accepts a POST request with Content-Type: multipart/form-data
-     and a file field in the body named "module_firmware". The file should
-     be a valid HEX image to be flashed to the atmega32u4. The received file is
-     sent via USB to the board and flashed by the avr109 bootloader. The file
-     is then deleted and a success code is returned
-    """
-    log.debug('Update Firmware request received')
-    data = await request.post()
-    module_serial = request.match_info['serial']
-    try:
-        res = await install_module_firmware(module_serial,
-                                            data['module_firmware'],
-                                            request.loop)
-        status = 200
-    except Exception as e:
-        log.exception("Exception during firmware update:")
-        res = {'message': 'Exception {} raised by update of {}: {}'.format(
-            type(e), data, e.__traceback__)}
         status = 500
     return web.json_response(res, status=status)
 

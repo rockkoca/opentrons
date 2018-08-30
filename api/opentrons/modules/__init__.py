@@ -13,6 +13,11 @@ log = logging.getLogger(__name__)
 PORT_SEARCH_TIMEOUT = 5.5
 SUPPORTED_MODULES = {'magdeck': MagDeck, 'tempdeck': TempDeck}
 
+# avrdude_options
+PART_NO = 'atmega32u4'
+PROGRAMMER_ID = 'avr109'
+BAUDRATE = '57600'
+
 
 class UnsupportedModuleError(Exception):
     pass
@@ -84,12 +89,14 @@ def discover_and_connect():
 
 def enter_bootloader(module):
     """
-    Using the driver method, enter bootloader mode of the atmega32u4. The bootloader mode opens a new port on the uC to
-    upload the hex file. After receiving a 'dfu' command, the firmware provides a 3-second window to close the
-    current port so as to do a clean switch to the bootloader port. The new port shows up as 'ttyn_bootloader' on the pi
-    Use this port to upload firmware
-    NOTE: Modules with old bootloader will have the bootloader port show up as a regular module port- 'ttyn_tempdeck'/
-    'ttyn_magdeck' with the port number being either different or same as the one that the module was originally on.
+    Using the driver method, enter bootloader mode of the atmega32u4.
+    The bootloader mode opens a new port on the uC to upload the hex file.
+    After receiving a 'dfu' command, the firmware provides a 3-second window to
+    close the current port so as to do a clean switch to the bootloader port.
+    The new port shows up as 'ttyn_bootloader' on the pi; upload fw through it.
+    NOTE: Modules with old bootloader will have the bootloader port show up as
+    a regular module port- 'ttyn_tempdeck'/ 'ttyn_magdeck' with the port number
+    being either different or same as the one that the module was originally on
     So we check for changes in ports and use the appropriate one
     """
     ports_before_dfu_mode = discover_ports()  # Required only for old bootloadr
@@ -111,29 +118,22 @@ async def update_firmware(module, firmware_file_path, config_file_path, loop):
     """
     Run avrdude firmware upload command. Switch back to normal module port
 
-    Note: For modules with old bootloader, the kernel could assign the module a new port after the update
-    (since the board is automatically reset). Scan for such a port change and use the appropriate port
+    Note: For modules with old bootloader, the kernel could assign the module
+    a new port after the update (since the board is automatically reset).
+    Scan for such a port change and use the appropriate port
     """
     # TODO: Make sure the module isn't in the middle of operation
 
     ports_before_update = discover_ports()
     print("update_firmware sending file to port:{}".format(module._port))
-    avrdude_cmd = {
-        'config_file': config_file_path,
-        'part_no': 'atmega32u4',
-        'programmer_id': 'avr109',
-        'port_name': module._port,
-        'baudrate': '57600',
-        'firmware_file': firmware_file_path
-    }
+
     proc = await asyncio.create_subprocess_exec(
-        'avrdude '
-        '-C{config_file} '
-        '-v -p{part_no} '
-        '-c{programmer_id} '
-        '-P{port_name} '
-        '-b{baudrate} -D '
-        '-Uflash:w:{firmware_file}:i'.format(**avrdude_cmd),
+        'avrdude', '-C{}'.format(config_file_path), '-v',
+        '-p{}'.format(PART_NO),
+        '-c{}'.format(PROGRAMMER_ID),
+        '-P{}'.format(module._port),
+        '-b{}'.format(BAUDRATE), '-D',
+        '-Uflash:w:{}:i'.format(firmware_file_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE, loop=loop)
     await proc.wait()
