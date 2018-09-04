@@ -26,7 +26,7 @@ function mapStateToProps (state: State): Props {
     uploadInProgress: robotSelectors.getSessionLoadInProgress(state),
     uploadError: robotSelectors.getUploadError(state),
     protocolRunning: robotSelectors.getIsRunning(state),
-    protocolDone: robotSelectors.getIsDone(state)
+    protocolDone: robotSelectors.getIsDone(state),
   }
 }
 

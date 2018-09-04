@@ -21,9 +21,9 @@ export {
   LabwareContainer,
   LabwareLabels,
   SlotOverlay,
-  Well
+  Well,
 }
 
 export type {
-  SingleWell
+  SingleWell,
 }

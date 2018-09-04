@@ -14,7 +14,7 @@ type OP = LabwareComponentProps
 
 type SP = {
   labware: ?$PropertyType<LabwareItemProps, 'labware'>,
-  module: ?SessionModule
+  module: ?SessionModule,
 }
 
 type Props = OP & SP
@@ -48,6 +48,6 @@ function mapStateToProps (state, ownProps: OP): SP {
 
   return {
     labware: allLabware.find((lw) => lw.slot === slot),
-    module: robotSelectors.getModulesBySlot(state)[slot]
+    module: robotSelectors.getModulesBySlot(state)[slot],
   }
 }

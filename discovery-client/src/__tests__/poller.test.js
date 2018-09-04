@@ -30,7 +30,7 @@ describe('discovery poller', () => {
       [
         {ip: 'foo', port: 31950},
         {ip: 'bar', port: 31950},
-        {ip: 'baz', port: 31950}
+        {ip: 'baz', port: 31950},
       ],
       6000,
       jest.fn()
@@ -64,7 +64,7 @@ describe('discovery poller', () => {
       [
         {ip: 'foo', port: 31950},
         {ip: 'bar', port: 31950},
-        {ip: 'baz', port: 31950}
+        {ip: 'baz', port: 31950},
       ],
       6000,
       jest.fn()
@@ -80,7 +80,7 @@ describe('discovery poller', () => {
   test('calls onHealth with health response if successful', done => {
     fetch.__setMockResponse({
       ok: true,
-      json: () => Promise.resolve({name: 'foo'})
+      json: () => Promise.resolve({name: 'foo'}),
     })
 
     poll([{ip: 'foo', port: 31950}], 1000, (candidate, response) => {
@@ -95,7 +95,7 @@ describe('discovery poller', () => {
   test('calls onHealth with null response if fetch not ok', done => {
     fetch.__setMockResponse({
       ok: false,
-      json: () => Promise.resolve({message: 'oh no!'})
+      json: () => Promise.resolve({message: 'oh no!'}),
     })
 
     poll([{ip: 'foo', port: 31950}], 1000, (candidate, response) => {

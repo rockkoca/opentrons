@@ -28,8 +28,8 @@ const dispense = (args: AspirateDispenseArgs): CommandCreator => (prevRobotState
       pipette,
       volume,
       labware,
-      well
-    }
+      well,
+    },
   }]
 
   return {
@@ -42,9 +42,9 @@ const dispense = (args: AspirateDispenseArgs): CommandCreator => (prevRobotState
         labwareId: labware,
         labwareType: prevRobotState.labware[labware].type,
         volume,
-        well
-      }, prevRobotState.liquidState)
-    }
+        well,
+      }, prevRobotState.liquidState),
+    },
   }
 }
 

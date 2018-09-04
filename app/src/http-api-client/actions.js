@@ -39,7 +39,7 @@ export type ClearApiResponseAction<Path: string> = {|
   payload: {|
     robot: BaseRobot,
     path: Path,
-  |}
+  |},
 |}
 
 export type ApiAction<Path: string, Request: ?{}, Response: {}> =

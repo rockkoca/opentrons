@@ -36,7 +36,7 @@ export type SettingsAction =
 type RobotSettingsRequestState = ApiCall<SettingsRequest, SettingsResponse>
 
 type RobotSettingsState = {
-  settings?: RobotSettingsRequestState
+  settings?: RobotSettingsRequestState,
 }
 
 export type SettingsState = {
@@ -105,8 +105,8 @@ export function settingsReducer (
         ...state,
         [name]: {
           ...stateByName,
-          [path]: {...stateByPath, request, inProgress: true, error: null}
-        }
+          [path]: {...stateByPath, request, inProgress: true, error: null},
+        },
       }
     }
 
@@ -121,8 +121,8 @@ export function settingsReducer (
         ...state,
         [name]: {
           ...stateByName,
-          [path]: {...stateByPath, response, inProgress: false, error: null}
-        }
+          [path]: {...stateByPath, response, inProgress: false, error: null},
+        },
       }
     }
 
@@ -137,8 +137,8 @@ export function settingsReducer (
         ...state,
         [name]: {
           ...stateByName,
-          [path]: {...stateByPath, error, inProgress: false}
-        }
+          [path]: {...stateByPath, error, inProgress: false},
+        },
       }
     }
   }

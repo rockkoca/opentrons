@@ -6,7 +6,7 @@ import type { FormData } from '../../../form-types'
 import type {
   ConsolidateFormData,
   DistributeFormData,
-  TransferFormData
+  TransferFormData,
 } from '../../../step-generation'
 import { DEFAULT_CHANGE_TIP_OPTION } from '../../../constants'
 import type { StepFormContext } from './types'
@@ -14,7 +14,7 @@ import { orderWells } from '../../utils'
 
 type ValidationAndErrors<F> = {
   errors: {[string]: string},
-  validatedForm: F | null
+  validatedForm: F | null,
 }
 
 function getMixData (formData, checkboxField, volumeField, timesField) {
@@ -48,7 +48,7 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
   const mixFirstAspirate = formData['aspirate_mix_checkbox']
     ? {
       volume: Number(formData['aspirate_mix_volume']),
-      times: parseInt(formData['aspirate_mix_times']) // TODO handle unparseable
+      times: parseInt(formData['aspirate_mix_times']), // TODO handle unparseable
     }
     : null
 
@@ -87,7 +87,7 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
     preWetTip: formData['aspirate_preWetTip'] || false,
     touchTipAfterAspirate: formData['aspirate_touchTip'] || false,
     touchTipAfterDispense: formData['dispense_touchTip'] || false,
-    description: 'description would be here 2018-03-01' // TODO get from form
+    description: 'description would be here 2018-03-01', // TODO get from form
   }
 
   let {
@@ -96,7 +96,7 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
     aspirate_wellOrder_first,
     aspirate_wellOrder_second,
     dispense_wellOrder_first,
-    dispense_wellOrder_second
+    dispense_wellOrder_second,
   } = formData
   sourceWells = sourceWells || []
   destWells = destWells || []
@@ -127,7 +127,7 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
   const requiredFieldErrors = [
     'pipette',
     'aspirate_labware',
-    'dispense_labware'
+    'dispense_labware',
   ].reduce((acc, fieldName) => (!formData[fieldName])
     ? {...acc, [fieldName]: 'This field is required'}
     : acc,
@@ -161,8 +161,8 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
           sourceWells,
           destWells,
           mixBeforeAspirate,
-          name: `Transfer ${formData.id}` // TODO Ian 2018-04-03 real name for steps
-        } : null
+          name: `Transfer ${formData.id}`, // TODO Ian 2018-04-03 real name for steps
+        } : null,
       }
       stepArguments = transferStepArguments
       break
@@ -176,8 +176,8 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
           sourceWells,
           destWell: destWells[0],
           stepType: 'consolidate',
-          name: `Consolidate ${formData.id}` // TODO Ian 2018-04-03 real name for steps
-        } : null
+          name: `Consolidate ${formData.id}`, // TODO Ian 2018-04-03 real name for steps
+        } : null,
       }
       stepArguments = consolidateStepArguments
       break
@@ -191,8 +191,8 @@ const transferLikeFormToArgs = (formData: FormData, context: StepFormContext): T
           sourceWell: sourceWells[0],
           destWells,
           stepType: 'distribute',
-          name: `Distribute ${formData.id}` // TODO Ian 2018-04-03 real name for steps
-        } : null
+          name: `Distribute ${formData.id}`, // TODO Ian 2018-04-03 real name for steps
+        } : null,
       }
       stepArguments = distributeStepArguments
       break

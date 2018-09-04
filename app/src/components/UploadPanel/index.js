@@ -5,7 +5,7 @@ import {push} from 'react-router-redux'
 
 import {
   actions as robotActions,
-  selectors as robotSelectors
+  selectors as robotSelectors,
 } from '../../robot'
 
 import {SidePanel} from '@opentrons/components'
@@ -29,13 +29,13 @@ function UploadPanel (props: Props) {
 
 function mapStateToProps (state) {
   return {
-    sessionLoaded: robotSelectors.getSessionIsLoaded(state)
+    sessionLoaded: robotSelectors.getSessionIsLoaded(state),
   }
 }
 
 function mapDispatchToProps (dispatch) {
   return {
     confirmUpload: () => dispatch(push('/upload/confirm')),
-    createSession: (file) => dispatch(robotActions.session(file))
+    createSession: (file) => dispatch(robotActions.session(file)),
   }
 }

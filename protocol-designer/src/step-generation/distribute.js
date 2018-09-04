@@ -33,7 +33,7 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
   if (!pipetteData) {
     // bail out before doing anything else
     return {
-      errors: [errorCreators.pipetteDoesNotExist({actionName, pipette: data.pipette})]
+      errors: [errorCreators.pipetteDoesNotExist({actionName, pipette: data.pipette})],
     }
   }
 
@@ -57,7 +57,7 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
         sourceWells: [data.sourceWell],
         destWells: [destWell],
         mixBeforeAspirate: data.mixBeforeAspirate,
-        mixInDestination: null
+        mixInDestination: null,
       }
       return transfer(transferData)
     })
@@ -76,8 +76,8 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
               touchTip({
                 pipette,
                 labware: data.destLabware,
-                well: destWell
-              })
+                well: destWell,
+              }),
             ]
             : []
 
@@ -86,9 +86,9 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
               pipette,
               volume: data.volume,
               labware: data.destLabware,
-              well: destWell
+              well: destWell,
             }),
-            ...touchTipAfterDispenseCommand
+            ...touchTipAfterDispenseCommand,
           ]
         })
 
@@ -105,7 +105,7 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
       const blowoutCommands = data.blowout ? [blowout({
         pipette: data.pipette,
         labware: data.blowout,
-        well: 'A1'
+        well: 'A1',
       })] : []
 
       const touchTipAfterAspirateCommand = data.touchTipAfterAspirate
@@ -113,8 +113,8 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
           touchTip({
             pipette: data.pipette,
             labware: data.sourceLabware,
-            well: data.sourceWell
-          })
+            well: data.sourceWell,
+          }),
         ]
         : []
 
@@ -135,12 +135,12 @@ const distribute = (data: DistributeFormData): CommandCreator => (prevRobotState
           pipette,
           volume: data.volume * destWellChunk.length + disposalVolume,
           labware: data.sourceLabware,
-          well: data.sourceWell
+          well: data.sourceWell,
         }),
         ...touchTipAfterAspirateCommand,
 
         ...dispenseCommands,
-        ...blowoutCommands
+        ...blowoutCommands,
       ]
     }
   )

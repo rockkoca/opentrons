@@ -7,7 +7,7 @@ import {
   reducer,
   fetchSettings,
   setSettings,
-  makeGetRobotSettings
+  makeGetRobotSettings,
 } from '..'
 
 jest.mock('../client')
@@ -33,7 +33,7 @@ describe('/settings', () => {
   describe('fetchSettings action creator', () => {
     const path = 'settings'
     const response = {
-      settings: [{id: 'i', title: 't', description: 'd', value: true}]
+      settings: [{id: 'i', title: 't', description: 'd', value: true}],
     }
 
     test('calls GET /settings', () => {
@@ -48,7 +48,7 @@ describe('/settings', () => {
       const request = null
       const expectedActions = [
         {type: 'api:REQUEST', payload: {robot, request, path}},
-        {type: 'api:SUCCESS', payload: {robot, response, path}}
+        {type: 'api:SUCCESS', payload: {robot, response, path}},
       ]
 
       client.__setMockResponse(response)
@@ -62,7 +62,7 @@ describe('/settings', () => {
       const error = {name: 'ResponseError', status: 500, message: ''}
       const expectedActions = [
         {type: 'api:REQUEST', payload: {robot, request, path}},
-        {type: 'api:FAILURE', payload: {robot, error, path}}
+        {type: 'api:FAILURE', payload: {robot, error, path}},
       ]
 
       client.__setMockError(error)
@@ -75,7 +75,7 @@ describe('/settings', () => {
   describe('setSettings action creator', () => {
     const path = 'settings'
     const response = {
-      settings: [{id: 'i', title: 't', description: 'd', value: true}]
+      settings: [{id: 'i', title: 't', description: 'd', value: true}],
     }
 
     test('calls GET /settings', () => {
@@ -92,7 +92,7 @@ describe('/settings', () => {
       const request = {id: 'i', value: true}
       const expectedActions = [
         {type: 'api:REQUEST', payload: {robot, request, path}},
-        {type: 'api:SUCCESS', payload: {robot, response, path}}
+        {type: 'api:SUCCESS', payload: {robot, response, path}},
       ]
 
       client.__setMockResponse(response)
@@ -106,7 +106,7 @@ describe('/settings', () => {
       const error = {name: 'ResponseError', status: 500, message: ''}
       const expectedActions = [
         {type: 'api:REQUEST', payload: {robot, request, path}},
-        {type: 'api:FAILURE', payload: {robot, error, path}}
+        {type: 'api:FAILURE', payload: {robot, error, path}},
       ]
 
       client.__setMockError(error)
@@ -127,17 +127,17 @@ describe('/settings', () => {
         path: 'settings',
         request: null,
         response: {
-          settings: [{id: 'i', title: 't', description: 'd', value: true}]
-        }
+          settings: [{id: 'i', title: 't', description: 'd', value: true}],
+        },
       },
       {
         method: 'POST',
         path: 'settings',
         request: {id: 'i', value: false},
         response: {
-          settings: [{id: 'i', title: 't', description: 'd', value: false}]
-        }
-      }
+          settings: [{id: 'i', title: 't', description: 'd', value: false}],
+        },
+      },
     ]
 
     REDUCER_REQUEST_RESPONSE_TESTS.forEach((spec) => {
@@ -147,7 +147,7 @@ describe('/settings', () => {
         test('handles api:REQUEST', () => {
           const action = {
             type: 'api:REQUEST',
-            payload: {path, robot, request}
+            payload: {path, robot, request},
           }
 
           expect(reducer(state, action).settings).toEqual({
@@ -155,16 +155,16 @@ describe('/settings', () => {
               [path]: {
                 request,
                 inProgress: true,
-                error: null
-              }
-            }
+                error: null,
+              },
+            },
           })
         })
 
         test('handles api:SUCCESS', () => {
           const action = {
             type: 'api:SUCCESS',
-            payload: {path, robot, response}
+            payload: {path, robot, response},
           }
 
           state.settings[NAME] = {
@@ -172,8 +172,8 @@ describe('/settings', () => {
               request,
               inProgress: true,
               error: null,
-              response: null
-            }
+              response: null,
+            },
           }
 
           expect(reducer(state, action).settings).toEqual({
@@ -182,9 +182,9 @@ describe('/settings', () => {
                 request,
                 response,
                 inProgress: false,
-                error: null
-              }
-            }
+                error: null,
+              },
+            },
           })
         })
 
@@ -192,7 +192,7 @@ describe('/settings', () => {
           const error = {message: 'we did not do it!'}
           const action = {
             type: 'api:FAILURE',
-            payload: {path, robot, error}
+            payload: {path, robot, error},
           }
 
           state.settings[NAME] = {
@@ -200,8 +200,8 @@ describe('/settings', () => {
               request,
               inProgress: true,
               error: null,
-              response: null
-            }
+              response: null,
+            },
           }
 
           expect(reducer(state, action).settings).toEqual({
@@ -210,9 +210,9 @@ describe('/settings', () => {
                 request,
                 error,
                 response: null,
-                inProgress: false
-              }
-            }
+                inProgress: false,
+              },
+            },
           })
         })
       })
@@ -222,7 +222,7 @@ describe('/settings', () => {
   describe('selectors', () => {
     beforeEach(() => {
       state.api.settings[NAME] = {
-        settings: {inProgress: true}
+        settings: {inProgress: true},
       }
     })
 
@@ -242,7 +242,7 @@ describe('/settings', () => {
 
       expect(getSettings(state, robot)).toEqual({
         ...state.api.settings[NAME].settings,
-        response: {settings: []}
+        response: {settings: []},
       })
     })
   })

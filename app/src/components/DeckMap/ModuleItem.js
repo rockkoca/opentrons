@@ -17,7 +17,7 @@ const DIMENSIONS = {
   x: -28.3,
   y: -2.5,
   width: 158.6,
-  height: 90.5
+  height: 90.5,
 }
 
 export default function ModuleItem (props: ModuleItemProps) {
@@ -61,7 +61,7 @@ function ModuleItemContents (props: ModuleItemProps) {
     )
 
   const iconClassName = cx(styles.module_review_icon, {
-    [styles.module_review_icon_present]: present
+    [styles.module_review_icon_present]: present,
   })
 
   return (

@@ -10,7 +10,7 @@ import {selectors as labwareIngredSelectors} from '../labware-ingred/reducers'
 import {
   selectors as steplistSelectors,
   END_TERMINAL_ITEM_ID,
-  START_TERMINAL_ITEM_ID
+  START_TERMINAL_ITEM_ID,
 } from '../steplist'
 import {selectors as fileDataSelectors} from '../file-data'
 import {closeIngredientSelector} from '../labware-ingred/actions'
@@ -26,7 +26,7 @@ type SP = $Diff<Props, DP> & {_page: Page}
 
 type TitleWithIconProps = {
   iconName?: ?IconName,
-  text?: ?string
+  text?: ?string,
 }
 
 function TitleWithIcon (props: TitleWithIconProps) {
@@ -59,7 +59,7 @@ function mapStateToProps (state: BaseState): SP {
         _page,
         title: labwareNickname,
         subtitle: labware && humanizeLabwareType(labware.type),
-        backButtonLabel: 'Deck'
+        backButtonLabel: 'Deck',
       }
     }
     case 'well-selection-modal':
@@ -69,7 +69,7 @@ function mapStateToProps (state: BaseState): SP {
           iconName={selectedStep && stepIconsByType[selectedStep.stepType]}
           text={selectedStep && selectedStep.title}
         />,
-        subtitle: labwareNickname
+        subtitle: labwareNickname,
       }
     case 'steplist':
     default: {
@@ -104,7 +104,7 @@ function mergeProps (stateProps: SP, dispatchProps: {dispatch: Dispatch<*>}): Pr
 
   return {
     ...props,
-    onBackClick
+    onBackClick,
   }
 }
 

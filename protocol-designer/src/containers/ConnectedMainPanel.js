@@ -27,6 +27,6 @@ function MainPanel (props: Props) {
 
 function mapStateToProps (state: BaseState): Props {
   return {
-    page: selectors.currentPage(state)
+    page: selectors.currentPage(state),
   }
 }

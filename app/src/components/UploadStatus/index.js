@@ -88,7 +88,7 @@ function StatusIcon (props: {success: boolean}) {
   const {success} = props
   const iconClassName = cx(styles.status_icon, {
     [styles.success]: success,
-    [styles.error]: !success
+    [styles.error]: !success,
   })
 
   const iconName = success

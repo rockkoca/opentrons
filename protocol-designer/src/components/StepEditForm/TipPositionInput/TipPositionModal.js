@@ -9,7 +9,7 @@ import {
   FormGroup,
   InputField,
   Icon,
-  HandleKeypress
+  HandleKeypress,
 } from '@opentrons/components'
 import i18n from '../../../localization'
 import { DEFAULT_MM_FROM_BOTTOM } from '../../../constants'
@@ -30,7 +30,7 @@ type OP = {
   wellHeightMM: number,
   isOpen: boolean,
   closeModal: () => mixed,
-  prefix: 'aspirate' | 'dispense'
+  prefix: 'aspirate' | 'dispense',
 }
 
 type Props = OP & DP
@@ -104,7 +104,7 @@ class TipPositionModal extends React.Component<Props, State> {
               {key: 'ArrowUp', shiftKey: false, onPress: this.makeHandleIncrement(SMALL_STEP_MM)},
               {key: 'ArrowUp', shiftKey: true, onPress: this.makeHandleIncrement(LARGE_STEP_MM)},
               {key: 'ArrowDown', shiftKey: false, onPress: this.makeHandleDecrement(SMALL_STEP_MM)},
-              {key: 'ArrowDown', shiftKey: true, onPress: this.makeHandleDecrement(LARGE_STEP_MM)}
+              {key: 'ArrowDown', shiftKey: true, onPress: this.makeHandleDecrement(LARGE_STEP_MM)},
             ]}>
           <Modal
             className={modalStyles.modal}
@@ -172,7 +172,7 @@ const mapDTP = (dispatch: Dispatch, ownProps: OP): DP => {
   return {
     updateValue: (value) => {
       dispatch(actions.changeFormInput({update: {[fieldName]: value}}))
-    }
+    },
   }
 }
 

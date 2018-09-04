@@ -38,8 +38,8 @@ const aspirate = (args: AspirateDispenseArgs): CommandCreator => (prevRobotState
       pipette,
       volume,
       labware,
-      well
-    }
+      well,
+    },
   }]
 
   const liquidStateAndWarnings = updateLiquidState({
@@ -48,20 +48,20 @@ const aspirate = (args: AspirateDispenseArgs): CommandCreator => (prevRobotState
     labwareId: labware,
     labwareType: prevRobotState.labware[labware].type,
     volume,
-    well
+    well,
   }, prevRobotState.liquidState)
 
   const {liquidState, warnings: liquidUpdateWarnings} = liquidStateAndWarnings
 
   const robotState = {
     ...prevRobotState,
-    liquidState
+    liquidState,
   }
 
   return {
     commands,
     robotState,
-    warnings: liquidUpdateWarnings
+    warnings: liquidUpdateWarnings,
   }
 }
 

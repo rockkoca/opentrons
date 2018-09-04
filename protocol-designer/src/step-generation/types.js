@@ -7,7 +7,7 @@ export type ChangeTipOptions = 'always' | 'once' | 'never'
 
 export type MixArgs = {|
   volume: number,
-  times: number
+  times: number,
 |}
 
 export type SharedFormDataFields = {|
@@ -45,7 +45,7 @@ export type TransferLikeFormDataFields = {
   /** Number of seconds to delay at the very end of the step (TODO: or after each dispense ?) */
   delayAfterDispense: ?number,
   /** If given, blow out in the specified labware after dispense at the end of each asp-asp-dispense cycle */
-  blowout: ?string // TODO LATER LabwareId export type here instead of string?
+  blowout: ?string, // TODO LATER LabwareId export type here instead of string?
 }
 
 export type ConsolidateFormData = {
@@ -57,7 +57,7 @@ export type ConsolidateFormData = {
   /** Mix in first well in chunk */
   mixFirstAspirate: ?MixArgs,
   /** Mix in destination well after dispense */
-  mixInDestination: ?MixArgs
+  mixInDestination: ?MixArgs,
 } & TransferLikeFormDataFields
 
 export type TransferFormData = {
@@ -69,7 +69,7 @@ export type TransferFormData = {
   /** Mix in first well in chunk */
   mixBeforeAspirate: ?MixArgs,
   /** Mix in destination well after dispense */
-  mixInDestination: ?MixArgs
+  mixInDestination: ?MixArgs,
 } & TransferLikeFormDataFields
 
 export type DistributeFormData = {
@@ -79,7 +79,7 @@ export type DistributeFormData = {
   destWells: Array<string>,
 
   /** Mix in first well in chunk */
-  mixBeforeAspirate: ?MixArgs
+  mixBeforeAspirate: ?MixArgs,
 } & TransferLikeFormDataFields
 
 export type MixFormData = {
@@ -99,7 +99,7 @@ export type MixFormData = {
   /** change tip: see comments in step-generation/mix.js */
   changeTip: ChangeTipOptions,
   /** If given, blow out in the specified labware after mixing each well */
-  blowout?: string
+  blowout?: string,
 }
 
 export type PauseFormData = {|
@@ -110,8 +110,8 @@ export type PauseFormData = {|
   meta: ?{
     hours?: number,
     minutes?: number,
-    seconds?: number
-  }
+    seconds?: number,
+  },
 |}
 
 export type CommandCreatorData =
@@ -127,13 +127,13 @@ export type PipetteData = {| // TODO refactor all 'pipette fields', split Pipett
   model: string,
   maxVolume: number,
   channels: Channels,
-  tiprackModel?: string // NOTE: this will go away when tiprack sharing is implemented
+  tiprackModel?: string, // NOTE: this will go away when tiprack sharing is implemented
 |}
 
 export type LabwareData = {|
   type: string, // TODO Ian 2018-04-17 keys from JSON. Also, rename 'type' to 'model' (or something??)
   name: ?string, // user-defined nickname
-  slot: DeckSlot
+  slot: DeckSlot,
 |}
 
 /** tips are numbered 0-7. 0 is the furthest to the back of the robot.
@@ -150,72 +150,72 @@ export type LabwareLiquidState = {[labwareId: string]: SingleLabwareLiquidState}
 // TODO Ian 2018-02-09 Rename this so it's less ambigious with what we call "robot state": RobotSimulationState?
 export type RobotState = {|
   instruments: { // TODO Ian 2018-05-23 rename this 'pipettes' to match tipState (& to disambiguate from future 'modules')
-    [instrumentId: string]: PipetteData
+    [instrumentId: string]: PipetteData,
   },
   labware: {
-    [labwareId: string]: LabwareData
+    [labwareId: string]: LabwareData,
   },
   // tiprackAssignment: maps tiprackLabwareId to its assigned PipetteId.
   // Each tiprack is either unassigned, or assigned to one pipette.
   // `tiprackAssignment` will go away when tiprack sharing is implemented
   tiprackAssignment?: ?{
-    [tiprackLabwareId: string]: ?string
+    [tiprackLabwareId: string]: ?string,
   },
   tipState: {
     tipracks: {
       [labwareId: string]: {
-        [wellName: string]: boolean // true if tip is in there
-      }
+        [wellName: string]: boolean, // true if tip is in there
+      },
     },
     pipettes: {
-      [pipetteId: string]: boolean // true if tip is on pipette
-    }
+      [pipetteId: string]: boolean, // true if tip is on pipette
+    },
   },
   liquidState: {
     pipettes: {
       [pipetteId: string]: {
-        [tipId: TipId]: LocationLiquidState
-      }
+        [tipId: TipId]: LocationLiquidState,
+      },
     },
     labware: {
       [labwareId: string]: {
-        [well: string]: LocationLiquidState
-      }
-    }
-  }
+        [well: string]: LocationLiquidState,
+      },
+    },
+  },
 |}
 
 export type PipetteLabwareFields = {|
   pipette: string,
   labware: string,
-  well: string
+  well: string,
   /* TODO optional uL/sec (or uL/minute???) speed here */
 |}
 
 export type AspirateDispenseArgs = {|
   ...PipetteLabwareFields,
-  volume: number
+  volume: number,
 |}
 
 export type Command = {|
   command: 'aspirate' | 'dispense',
-  params: AspirateDispenseArgs
+  params: AspirateDispenseArgs,
 |} | {|
   command: 'pick-up-tip' | 'drop-tip' | 'blowout' | 'touch-tip',
-  params: PipetteLabwareFields
+  params: PipetteLabwareFields,
 |} | {|
   command: 'delay',
   /** number of seconds to delay (fractional values OK),
     or `true` for delay until user input */
   params: {|
     wait: number | true,
-    message: ?string
-  |}
+    message: ?string,
+  |},
 |} | {|
   command: 'air-gap',
   params: {|
     pipette: string,
-    volume: number
+    volume: number,
   |},
 |}
 
@@ -229,7 +229,7 @@ export type ErrorType =
 
 export type CommandCreatorError = {|
   message: string,
-  type: ErrorType
+  type: ErrorType,
 |}
 
 export type WarningType =
@@ -238,23 +238,23 @@ export type WarningType =
 
 export type CommandCreatorWarning = {|
     message: string,
-    type: WarningType
+    type: WarningType,
 |}
 
 export type CommandsAndRobotState = {|
   commands: Array<Command>,
   robotState: RobotState,
-  warnings?: Array<CommandCreatorWarning>
+  warnings?: Array<CommandCreatorWarning>,
 |}
 
 export type CommandCreatorErrorResponse = {
   errors: Array<CommandCreatorError>,
-  warnings?: Array<CommandCreatorWarning>
+  warnings?: Array<CommandCreatorWarning>,
 }
 
 export type CommandCreator = (prevRobotState: RobotState) => CommandsAndRobotState | CommandCreatorErrorResponse
 
 export type Timeline = {|
   timeline: Array<CommandsAndRobotState>, // TODO: Ian 2018-06-14 avoid timeline.timeline shape, better names
-  errors?: ?Array<CommandCreatorError>
+  errors?: ?Array<CommandCreatorError>,
 |}

@@ -26,11 +26,11 @@ describe('health', () => {
             [path]: {
               inProgress: true,
               error: null,
-              response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-            }
-          }
-        }
-      }
+              response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+            },
+          },
+        },
+      },
     }
 
     const getRobotHealth = makeGetRobotHealth()
@@ -38,15 +38,15 @@ describe('health', () => {
     expect(getRobotHealth(state, {name})).toEqual({
       inProgress: true,
       error: null,
-      response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
+      response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
     })
   })
 
   test('makeGetRobotHealth returns health of non-robot', () => {
     const state = {
       api: {
-        health: {}
-      }
+        health: {},
+      },
     }
 
     const getRobotHealth = makeGetRobotHealth()
@@ -65,7 +65,7 @@ describe('health', () => {
     const store = mockStore({})
     const expectedActions = [
       {type: 'api:REQUEST', payload: {robot, path, request: null}},
-      {type: 'api:SUCCESS', payload: {robot, path, response}}
+      {type: 'api:SUCCESS', payload: {robot, path, response}},
     ]
 
     client.__setMockResponse(response)
@@ -79,7 +79,7 @@ describe('health', () => {
     const store = mockStore({})
     const expectedActions = [
       {type: 'api:REQUEST', payload: {robot, path, request: null}},
-      {type: 'api:FAILURE', payload: {robot, path, error}}
+      {type: 'api:FAILURE', payload: {robot, path, error}},
     ]
 
     client.__setMockError(error)
@@ -95,10 +95,10 @@ describe('health', () => {
           [path]: {
             inProgress: false,
             error: new Error('AH'),
-            response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-          }
-        }
-      }
+            response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+          },
+        },
+      },
     }
     const action = {type: 'api:REQUEST', payload: {robot, path}}
 
@@ -106,8 +106,8 @@ describe('health', () => {
       [path]: {
         inProgress: true,
         error: null,
-        response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-      }
+        response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+      },
     })
   })
 
@@ -119,10 +119,10 @@ describe('health', () => {
           [path]: {
             inProgress: true,
             error: null,
-            response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-          }
-        }
-      }
+            response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+          },
+        },
+      },
     }
     const action = {type: 'api:SUCCESS', payload: {robot, path, response}}
 
@@ -130,8 +130,8 @@ describe('health', () => {
       [path]: {
         inProgress: false,
         error: null,
-        response: {name, api_version: '4.5.6', fw_version: '7.8.9'}
-      }
+        response: {name, api_version: '4.5.6', fw_version: '7.8.9'},
+      },
     })
   })
 
@@ -143,10 +143,10 @@ describe('health', () => {
           [path]: {
             inProgress: true,
             error: null,
-            response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-          }
-        }
-      }
+            response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+          },
+        },
+      },
     }
     const action = {type: 'api:FAILURE', payload: {robot, path, error}}
 
@@ -154,8 +154,8 @@ describe('health', () => {
       [path]: {
         inProgress: false,
         error,
-        response: {name, api_version: '1.2.3', fw_version: '4.5.6'}
-      }
+        response: {name, api_version: '1.2.3', fw_version: '4.5.6'},
+      },
     })
   })
 })

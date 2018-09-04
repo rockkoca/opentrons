@@ -13,13 +13,13 @@ export default connect(mapStateToProps, mapDispatchToProps)(NewFileModal)
 type Props = React.ElementProps<typeof NewFileModal>
 
 type StateProps = {
-  hideModal: $PropertyType<Props, 'hideModal'>
+  hideModal: $PropertyType<Props, 'hideModal'>,
 }
 type DispatchProps = $Diff<Props, StateProps>
 
 function mapStateToProps (state: BaseState): StateProps {
   return {
-    hideModal: !selectors.newProtocolModal(state)
+    hideModal: !selectors.newProtocolModal(state),
   }
 }
 
@@ -28,6 +28,6 @@ function mapDispatchToProps (dispatch: Dispatch<*>): DispatchProps {
     onCancel: () => dispatch(navigationActions.toggleNewProtocolModal(false)),
     onSave: fields => {
       dispatch(fileActions.createNewProtocol(fields))
-    }
+    },
   }
 }

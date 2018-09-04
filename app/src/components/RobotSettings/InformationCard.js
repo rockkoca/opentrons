@@ -10,23 +10,23 @@ import {
   fetchHealthAndIgnored,
   makeGetRobotHealth,
   makeGetAvailableRobotUpdate,
-  type RobotHealth
+  type RobotHealth,
 } from '../../http-api-client'
 
 import {RefreshCard, LabeledValue, OutlineButton} from '@opentrons/components'
 import {CardContentQuarter} from '../layout'
 
 type OwnProps = Robot & {
-  updateUrl: string
+  updateUrl: string,
 }
 
 type StateProps = {
   healthRequest: RobotHealth,
-  availableUpdate: ?string
+  availableUpdate: ?string,
 }
 
 type DispatchProps = {
-  fetchHealth: () => mixed
+  fetchHealth: () => mixed,
 }
 
 type Props = OwnProps & StateProps & DispatchProps
@@ -44,7 +44,7 @@ function InformationCard (props: Props) {
     availableUpdate,
     fetchHealth,
     updateUrl,
-    healthRequest: {inProgress, response: health}
+    healthRequest: {inProgress, response: health},
   } = props
 
   const realName = (health && health.name) || name
@@ -96,7 +96,7 @@ function makeMapStateToProps () {
 
   return (state: State, ownProps: OwnProps): StateProps => ({
     healthRequest: getRobotHealth(state, ownProps),
-    availableUpdate: getAvailableRobotUpdate(state, ownProps)
+    availableUpdate: getAvailableRobotUpdate(state, ownProps),
   })
 }
 
@@ -105,6 +105,6 @@ function mapDispatchToProps (
   ownProps: OwnProps
 ): DispatchProps {
   return {
-    fetchHealth: () => dispatch(fetchHealthAndIgnored(ownProps))
+    fetchHealth: () => dispatch(fetchHealthAndIgnored(ownProps)),
   }
 }

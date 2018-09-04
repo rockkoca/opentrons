@@ -37,7 +37,7 @@ const transfer = (data: TransferFormData): CommandCreator => (prevRobotState: Ro
   if (!pipetteData) {
     // bail out before doing anything else
     return {
-      errors: [errorCreators.pipetteDoesNotExist({actionName, pipette: data.pipette})]
+      errors: [errorCreators.pipetteDoesNotExist({actionName, pipette: data.pipette})],
     }
   }
 
@@ -92,7 +92,7 @@ const transfer = (data: TransferFormData): CommandCreator => (prevRobotState: Ro
             ? [touchTip({
               pipette: data.pipette,
               labware: data.sourceLabware,
-              well: sourceWell
+              well: sourceWell,
             })]
             : []
 
@@ -100,7 +100,7 @@ const transfer = (data: TransferFormData): CommandCreator => (prevRobotState: Ro
             ? [touchTip({
               pipette: data.pipette,
               labware: data.destLabware,
-              well: destWell
+              well: destWell,
             })]
             : []
 
@@ -122,17 +122,17 @@ const transfer = (data: TransferFormData): CommandCreator => (prevRobotState: Ro
               pipette: data.pipette,
               volume: subTransferVol,
               labware: data.sourceLabware,
-              well: sourceWell
+              well: sourceWell,
             }),
             ...touchTipAfterAspirateCommands,
             dispense({
               pipette: data.pipette,
               volume: subTransferVol,
               labware: data.destLabware,
-              well: destWell
+              well: destWell,
             }),
             ...touchTipAfterDispenseCommands,
-            ...mixInDestinationCommands
+            ...mixInDestinationCommands,
           ]
         }
       )

@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import type {Candidate, Logger, HealthResponse} from './types'
 
 export type PollRequest = {
-  id: ?IntervalID
+  id: ?IntervalID,
 }
 
 export function poll (

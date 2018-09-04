@@ -53,7 +53,7 @@ function initializeIntercom (config: SupportConfig) {
       user_id: userId,
       created_at: config.createdAt,
       name: config.name,
-      'App Version': version
+      'App Version': version,
     })
   }
 }
