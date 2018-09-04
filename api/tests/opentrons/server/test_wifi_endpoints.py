@@ -1,5 +1,5 @@
 import json
-from opentrons.server.main import init
+from opentrons.server import init
 from opentrons.server.endpoints import wifi
 
 """

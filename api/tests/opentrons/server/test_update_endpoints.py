@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 from aiohttp import web
-from opentrons.server.main import init
+from opentrons.server import init
 from opentrons.server.endpoints import update
 import ot2serverlib
 from ot2serverlib import ignore_update

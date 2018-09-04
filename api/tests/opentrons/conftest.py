@@ -17,7 +17,7 @@ from opentrons.data_storage import database
 from opentrons.server import rpc
 from opentrons import config
 from opentrons.config import advanced_settings as advs
-from opentrons.server.main import init
+from opentrons.server import init
 from opentrons.deck_calibration import endpoints
 
 # Uncomment to enable logging during tests
