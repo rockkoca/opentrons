@@ -10,6 +10,9 @@ from aiohttp import WSCloseCode
 from asyncio import Queue
 from opentrons.server import serialize
 from concurrent.futures import ThreadPoolExecutor
+from opentrons.broker import subscribe, Notifications
+from api.session import SessionManager, Session
+from api.calibration import CalibrationManager
 
 log = logging.getLogger(__name__)
 
@@ -25,14 +28,15 @@ CALL_NACK_MESSAGE = 4
 PONG_MESSAGE = 5
 
 
-class Server(object):
-    def __init__(self, root=None, loop=None, middlewares=()):
+class RPCServer(object):
+    def __init__(self, app):
         self.monitor_events_task = None
-        self.loop = loop or asyncio.get_event_loop()
+        self.app = app
+        self.loop = app.loop or asyncio.get_event_loop()
         self.objects = {}
         self.system = SystemCalls(self.objects)
 
-        self.root = root
+        self.root = MainRouter()
 
         # Allow for two concurrent calls max
         self.executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
@@ -40,7 +44,6 @@ class Server(object):
         self.clients = {}
         self.tasks = []
 
-        self.app = web.Application(loop=loop, middlewares=middlewares)
         self.app.router.add_get('/', self.handler)
         self.app.on_shutdown.append(self.on_shutdown)
 
@@ -329,3 +332,29 @@ class SystemCalls(object):
 
     def get_object_by_id(self, id):
         return self.objects[id]
+
+
+class MainRouter:
+    def __init__(self, loop=None):
+        self._notifications = Notifications(loop=loop)
+        self._unsubscribe = []
+        self._unsubscribe += [subscribe(
+            Session.TOPIC,
+            self._notifications.on_notify)]
+        self._unsubscribe += [subscribe(
+            CalibrationManager.TOPIC,
+            self._notifications.on_notify)]
+
+        self.session_manager = SessionManager(loop=loop)
+        self.calibration_manager = CalibrationManager(loop=loop)
+
+    @property
+    def notifications(self):
+        return self._notifications
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        for unsubscribe in self._unsubscribe:
+            unsubscribe()

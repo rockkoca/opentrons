@@ -1,35 +1,21 @@
 import os
 import logging
-from aiohttp import web
+import server
+from server import main as serverMain
+from argparse import ArgumentParser
 from opentrons import robot, __version__
 from config import feature_flags as ff
 from logging.config import dictConfig
 from util import environment
-from server import init
-from argparse import ArgumentParser
 from system import udev
+from system import resin
+
 
 log = logging.getLogger(__name__)
-lock_file_path = '/tmp/resin/resin-updates.lock'
 log_file_path = environment.get_path('LOG_DIR')
 
 
-def lock_resin_updates():
-    if os.environ.get('RUNNING_ON_PI'):
-        import fcntl
-
-        try:
-            with open(lock_file_path, 'w') as fd:
-                fd.write('a')
-                fcntl.flock(fd, fcntl.LOCK_EX)
-                fd.close()
-        except OSError:
-            log.warning('Unable to create resin-update lock file')
-
-
-def unlock_resin_updates():
-    if os.environ.get('RUNNING_ON_PI') and os.path.exists(lock_file_path):
-        os.remove(lock_file_path)
+# TODO: move to system/
 
 
 def log_init():
@@ -123,25 +109,8 @@ def main():
     log_init()
 
     arg_parser = ArgumentParser(
-        description="Opentrons application server",
-        prog="opentrons.server.main"
-    )
-    arg_parser.add_argument(
-        "-H", "--hostname",
-        help="TCP/IP hostname to serve on (default: %(default)r)",
-        default="localhost"
-    )
-    arg_parser.add_argument(
-        "-P", "--port",
-        help="TCP/IP port to serve on (default: %(default)r)",
-        type=int,
-        default="8080"
-    )
-    arg_parser.add_argument(
-        "-U", "--path",
-        help="Unix file system path to serve on. Specifying a path will cause "
-             "hostname and port arguments to be ignored.",
-    )
+        description="Opentrons robot software",
+        parents=[serverMain.server_arg_parser()])
     args = arg_parser.parse_args()
 
     if args.path:
@@ -163,13 +132,13 @@ def main():
         log.info("Homing Z axes")
         robot.home_z()
 
-    # TODO: set up udev in a better location
+    server.run(args.hostname, args.port, args.path)
+
     if not os.environ.get("ENABLE_VIRTUAL_SMOOTHIE"):
         udev.setup_rules_file()
     # Explicitly unlock resin updates in case a prior server left them locked
-    unlock_resin_updates()
-    web.run_app(init(log_file_path),
-                host=args.hostname, port=args.port, path=args.path)
+    resin.unlock_updates()
+
     arg_parser.exit(message="Stopped\n")
 
 
